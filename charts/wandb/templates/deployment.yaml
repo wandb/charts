@@ -65,6 +65,16 @@ spec:
                 secretKeyRef:
                   name: {{ include "wandb.fullname" . }}-secrets
                   key: LICENSE
+            {{- if .Values.parquet.enabled }}
+            - name: PARQUET_ENABLED
+              value: "true"
+            {{- end }}
+            {{- if .Values.weave.enabled }}
+            - name: WEAVE_ENABLED
+              value: "true"
+            - name: WEAVE_SERVICE
+              value: {{ include "wandb.fullname" . }}-weave:9994 
+            {{- end }}
             {{- if .Values.sso.enabled }}
             - name: OIDC_ISSUER
               value: {{ .Values.sso.issuer }}
