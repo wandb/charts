@@ -19,9 +19,12 @@ dependencies:
   version: 0.1.0
 - name: redis
   repository: https://charts.bitnami.com/bitnami
-  version: 18.1.5
+  version: 18.5.0
 - name: otel
   repository: file://charts/otel
   version: 0.1.0
-digest: sha256:d6f7dbed1f8fcbbd34d18b0911891fb27eeef0021092b69ea35e7ca5dcede038
-generated: "2023-10-16T19:07:10.090393-04:00"
+- name: datadog-operator
+  repository: https://helm.datadoghq.com
+  version: 1.4.0
+digest: sha256:d13face3ad2502a85419a82d3b8e3ae494ba1ee6ea1834109cc1c472b87bde77
+generated: "2023-12-12T16:56:33.840759296Z"
