@@ -103,7 +103,7 @@ global:
     runUpdatesShadowTopic: ""
 
 ingress:
-  install: true
+  use: "native"
   nameOverride: ""
   defaultBackend: "app"
   annotations: {}
@@ -116,6 +116,12 @@ ingress:
     provider: ""
     server: https://acme-v02.api.letsencrypt.org/directory
     email: support@wandb.com
+
+nginx:
+  install: false
+  image:
+    repository: wandb/local
+    tag: latest
 
 parquet:
   install: true
