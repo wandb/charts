@@ -56,10 +56,6 @@ dependencies:
     version: "*.*.*"
     repository: file://charts/nginx
     condition: nginx.install
-  - name: stackdriver
-    version: "*.*.*"
-    repository: file://charts/stackdriver
-    condition: stackdriver.install
   - name: yace
     version: "*.*.*"
     repository: file://charts/yace
