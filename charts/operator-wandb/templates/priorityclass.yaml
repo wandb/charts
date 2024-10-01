@@ -1,0 +1,9 @@
+{{- if .Values.enablePriorityClass }}
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: wandb-high-priority
+value: 10
+globalDefault: false
+description: "High priority pods"
+{{- end }}
