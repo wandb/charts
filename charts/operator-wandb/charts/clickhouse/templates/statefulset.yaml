@@ -1,0 +1,108 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "clickhouse.fullname" . }}-server
+  labels:
+    app: {{ include "clickhouse.name" . }}-replica
+spec:
+  replicas: {{ .Values.clickhouse.replicaCount }}
+  podManagementPolicy: "Parallel"
+  selector:
+    matchLabels:
+      app: {{ include "clickhouse.name" . }}-replica
+  serviceName: {{ include "clickhouse.fullname" . }}-headless
+  template:
+    metadata:
+      labels:
+        app: {{ include "clickhouse.name" . }}-replica
+    spec:
+      serviceAccountName: {{ .Values.clickhouse.serviceAccountName }}
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: {{ .Values.clickhouse.securityContext.fsGroup }}
+        fsGroupChangePolicy: Always
+      containers:
+        - name: clickhouse
+          image: {{ .Values.clickhouse.image.repository }}:{{ .Values.clickhouse.image.tag }}
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: processed-config
+              mountPath: /etc/clickhouse-server
+            - name: config-volume
+              mountPath: /etc/clickhouse-server/config.xml
+              subPathExpr: "$(POD_NAME).xml"
+              readOnly: true
+            - name: clickhouse-data
+              mountPath: /var/lib/clickhouse
+              readOnly: false
+            - name: clickhouse-data
+              mountPath: /var/log/clickhouse-server
+              readOnly: false
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: {{ .Values.clickhouse.securityContext.runAsGroup }}
+            runAsNonRoot: true
+            runAsUser: {{ .Values.clickhouse.securityContext.runAsUser }}
+            seLinuxOptions:
+              level: "{{ .Values.clickhouse.securityContext.seLinuxOptions.level }}"
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            limits:
+              cpu: {{ .Values.clickhouse.resources.limits.cpu }}
+              ephemeral-storage: {{ .Values.clickhouse.resources.limits.ephemeralStorage }}
+              memory: {{ .Values.clickhouse.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.clickhouse.resources.requests.cpu }}
+              ephemeral-storage: {{ .Values.clickhouse.resources.requests.ephemeralStorage }}
+              memory: {{ .Values.clickhouse.resources.requests.memory }}
+          ports:
+            - name: http
+              containerPort: 8123
+            - name: tcp
+              containerPort: 9000
+            - name: intrsrvhttp
+              containerPort: 9009
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+            tcpSocket:
+              port: http
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+            httpGet:
+              path: /ping
+              port: http
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ .Values.clickhouse.configMapName }}
+        - name: processed-config
+          emptyDir: {}
+
+  volumeClaimTemplates:
+    - metadata:
+        name: clickhouse-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.clickhouse.storage.size }}

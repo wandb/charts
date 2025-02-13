@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.name }}
+  labels:
+    app: {{ .Values.app }}
+spec:
+  replicas: {{ .Values.replicas }}
+  podManagementPolicy: {{ .Values.podManagementPolicy }}
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}
+  serviceName: {{ .Values.serviceName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      automountServiceAccountToken: {{ .Values.automountServiceAccountToken }}
+      securityContext:
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+        fsGroupChangePolicy: {{ .Values.securityContext.fsGroupChangePolicy }}
+      containers:
+        - name: {{ .Values.container.name }}
+          image: {{ .Values.container.image }}
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: processed-config
+              mountPath: /etc/clickhouse-keeper
+            - name: config-volume
+              mountPath: /etc/clickhouse-keeper/keeper_config.xml
+              subPathExpr: "$(POD_NAME).xml"
+              readOnly: true
+            - name: keeper-data
+              mountPath: /var/lib/clickhouse
+              readOnly: false
+            - name: keeper-data
+              mountPath: /var/lib/clickhouse-keeper
+              readOnly: false
+            - name: keeper-data
+              mountPath: /var/log/clickhouse-keeper
+              readOnly: false
+          securityContext:
+            allowPrivilegeEscalation: {{ .Values.container.securityContext.allowPrivilegeEscalation }}
+            capabilities:
+              drop:
+                - ALL
+            privileged: {{ .Values.container.securityContext.privileged }}
+            readOnlyRootFilesystem: {{ .Values.container.securityContext.readOnlyRootFilesystem }}
+            runAsGroup: {{ .Values.container.securityContext.runAsGroup }}
+            runAsNonRoot: {{ .Values.container.securityContext.runAsNonRoot }}
+            runAsUser: {{ .Values.container.securityContext.runAsUser }}
+            seLinuxOptions:
+              level: {{ .Values.container.securityContext.seLinuxOptions.level }}
+            seccompProfile:
+              type: {{ .Values.container.securityContext.seccompProfile.type }}
+          resources:
+            limits:
+              cpu: {{ .Values.container.resources.limits.cpu }}
+              ephemeral-storage: {{ .Values.container.resources.limits.ephemeralStorage }}
+              memory: {{ .Values.container.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.container.resources.requests.cpu }}
+              ephemeral-storage: {{ .Values.container.resources.requests.ephemeralStorage }}
+              memory: {{ .Values.container.resources.requests.memory }}
+          ports:
+            - name: tcp
+              containerPort: {{ .Values.container.ports.tcp }}
+            - name: raft
+              containerPort: {{ .Values.container.ports.raft }}
+            - name: http
+              containerPort: {{ .Values.container.ports.http }}
+          livenessProbe:
+            failureThreshold: {{ .Values.container.livenessProbe.failureThreshold }}
+            initialDelaySeconds: {{ .Values.container.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.container.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.container.livenessProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.container.livenessProbe.timeoutSeconds }}
+            tcpSocket:
+              port: {{ .Values.container.livenessProbe.tcpSocket.port }}
+          readinessProbe:
+            failureThreshold: {{ .Values.container.readinessProbe.failureThreshold }}
+            initialDelaySeconds: {{ .Values.container.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.container.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.container.readinessProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.container.readinessProbe.timeoutSeconds }}
+            httpGet:
+              path: {{ .Values.container.readinessProbe.httpGet.path }}
+              port: {{ .Values.container.readinessProbe.httpGet.port }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ .Values.volumes.configVolume.configMap.name }}
+        - name: processed-config
+          emptyDir: {}
+
+  volumeClaimTemplates:
+    - metadata:
+        name: {{ .Values.volumeClaimTemplates.name }}
+      spec:
+        accessModes:
+          - {{ .Values.volumeClaimTemplates.accessModes }}
+        resources:
+          requests:
+            storage: {{ .Values.volumeClaimTemplates.resources.requests.storage }}

@@ -1,0 +1,41 @@
+enabled: false
+# Stable version
+image:
+  registry: docker.io
+  repository: bitnami/clickhouse
+  tag: 24.8
+
+## @param clusterName ClickHouse cluster name
+clusterName: weave_cluster
+
+## @param shards Number of ClickHouse shards to deploy
+shards: 1
+
+## @param replicaCount Number of ClickHouse replicas per shard to deploy
+## if keeper enable, same as keeper count, keeper cluster by shards.
+replicaCount: 3
+persistence:
+  enabled: false
+
+## ClickHouse resource requests and limits
+resources:
+  requests:
+    cpu: 0.5
+    memory: 500Mi
+  limits:
+    cpu: 3.0
+    memory: 6Gi
+
+## Authentication
+auth:
+  username: weave_admin
+  password: "weave_123"
+  existingSecret: ""
+  existingSecretKey: ""
+
+## @param logLevel Logging level
+logLevel: information
+
+## @section Zookeeper subchart parameters
+zookeeper:
+  enabled: false

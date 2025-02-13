@@ -1,0 +1,41 @@
+enabled: false
+
+# Image settings for the StatefulSet
+image:
+  repository: clickhouse/clickhouse-server
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Number of replicas for the StatefulSet
+replicaCount: 3
+
+# Resource requests and limits for the StatefulSet pods
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "500m"
+  limits:
+    memory: "2Gi"
+    cpu: "1"
+
+# Node selector for the StatefulSet pods
+nodeSelector: {}
+
+# Tolerations for the StatefulSet pods
+tolerations: []
+
+# Affinity settings for the StatefulSet pods
+affinity: {}
+
+# Persistent volume claim settings for the StatefulSet
+persistence:
+  enabled: true
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+  storageClass: standard
+
+# Service settings for the StatefulSet
+service:
+  type: ClusterIP
+  port: 8123
