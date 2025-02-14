@@ -1,0 +1,41 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "clickhouse-keeper.fullname" . }}
+  labels:
+    {{- include "wandb.commonLabels" . | nindent 4 }}
+    {{- include "clickhouse-keeper.labels" . | nindent 4 }}
+    {{- include "clickhouse-keeper.commonLabels" . | nindent 4 }}
+    {{- if .Values.service.labels -}}
+      {{- toYaml .Values.service.labels | nindent 4 }}
+    {{- end }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports: 
+    {{- include "clickhouse-keeper.containerPorts" . | nindent 10 }}
+  selector: 
+    {{- include "clickhouse-keeper.labels" . | nindent 4 }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "clickhouse-keeper.fullname" . }}-headless
+  labels:
+    {{- include "wandb.commonLabels" . | nindent 4 }}
+    {{- include "clickhouse-keeper.labels" . | nindent 4 }}
+    {{- include "clickhouse-keeper.commonLabels" . | nindent 4 }}
+    {{- if .Values.service.labels -}}
+      {{- toYaml .Values.service.labels | nindent 4 }}
+    {{- end }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    {{- include "clickhouse-keeper.containerPorts" . | nindent 10 }}
+  selector: 
+    {{- include "clickhouse-keeper.labels" . | nindent 4 }}

@@ -1,30 +1,36 @@
-enabled: false
-# Stable version
-image:
-  registry: docker.io
-  repository: bitnami/clickhouse
-  tag: 24.8
+# Image settings for the StatefulSet
+server_image:
+  repository: clickhouse/clickhouse-server
+  tag: latest
 
-## @param clusterName ClickHouse cluster name
-clusterName: weave_cluster
+keeper_image:
+  repository: clickhouse/clickhouse-keeper
+  tag: latest
 
-## @param shards Number of ClickHouse shards to deploy
-shards: 1
+common:
+  labels: {}
 
-## @param replicaCount Number of ClickHouse replicas per shard to deploy
-## if keeper enable, same as keeper count, keeper cluster by shards.
+deployment:
+  labels: {}
+  annotations: {}
+
+# Number of replicas for the StatefulSet
 replicaCount: 3
-persistence:
-  enabled: false
 
-## ClickHouse resource requests and limits
-resources:
-  requests:
-    cpu: 0.5
-    memory: 500Mi
-  limits:
-    cpu: 3.0
-    memory: 6Gi
+# Pod management policy for the StatefulSet
+podManagementPolicy: OrderedReady
+
+pod:
+  labels: {}
+  annotations: {}
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    runAsGroup: 0
+    fsGroup: 0
+    fsGroupChangePolicy: "OnRootMismatch"
+    seccompProfile:
+      type: ""
 
 ## Authentication
 auth:
@@ -36,6 +42,83 @@ auth:
 ## @param logLevel Logging level
 logLevel: information
 
-## @section Zookeeper subchart parameters
-zookeeper:
-  enabled: false
+container:
+  securityContext:
+    capabilities:
+      add: []
+      drop: []
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    privileged: false
+  clickhouse:
+    ports:
+    - name: http
+      targetPort: http
+      port: 8123
+      protocol: TCP
+    - name: tcp
+      targetPort: tcp
+      port: 9000
+      protocol: TCP
+    - name: intrsrvhttp
+      targetPort: intrsrvhttp
+      port: 9009
+      protocol: TCP
+  keeper:
+    ports:
+    - name: keeper
+      targetPort: keeper
+      port: 9181
+      protocol: TCP
+    - name: http
+      targetPort: http
+      port: 9182
+      protocol: TCP
+    - name: raft
+      targetPort: raft
+      port: 9234
+      protocol: TCP
+
+# Resource requests and limits for the StatefulSet pods
+resources:
+  limits:
+    cpu: 2
+    ephemeral-storage: "50Gi"
+    memory: "4096Mi"
+  requests:
+    cpu: 0.5
+    ephemeral-storage: "1Gi"
+    memory: "512Mi"
+
+# Node selector for the StatefulSet pods
+nodeSelector: {}
+
+# Tolerations for the StatefulSet pods
+tolerations: []
+
+# Affinity settings for the StatefulSet pods
+affinity: {}
+
+# Persistent volume claim settings for the StatefulSet
+persistence:
+  enabled: true
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+  storageClass: standard
+
+service:
+  type: ClusterIP
+  annotations: {}
+  labels: {}
+
+serviceAccount:
+  create: true
+  annotations: {}
+
+local_storage: "100Gi"
+
+buckets:
+  - replica1: "bucketA"
+  - replica2: "bucketB"
+  - replica3: "bucketC"

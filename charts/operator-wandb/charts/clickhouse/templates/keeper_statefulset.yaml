@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "clickhouse-keeper.fullname" . }}-keeper
+  labels:
+    {{- include "wandb.commonLabels" . | nindent 4 }}
+    {{- include "clickhouse-keeper.commonLabels" . | nindent 4 }}
+    {{- include "clickhouse-keeper.labels" . | nindent 4 }}
+    {{- if .Values.deployment.labels }}
+    {{-   toYaml .Values.deployment.labels | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- include "wandb.deploymentAnnotations" $ | nindent 4 }}
+    {{- if .Values.deployment.annotations -}}
+    {{-   toYaml .Values.deployment.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  replicas: {{ include "clickhouse-keeper.replicaCount" . }}
+  podManagementPolicy: {{ .Values.podManagementPolicy | quote }}
+  selector:
+    matchLabels:
+      {{ include "wandb.selectorLabels" $ | nindent 6 }}
+      {{ include "clickhouse-keeper.labels" . | nindent 6 }}
+  serviceName: {{ .Values.serviceName }}
+  template:
+    metadata:
+      labels:
+        {{ include "wandb.podLabels" . | nindent 8 }}
+        {{ include "clickhouse-keeper.commonLabels" . | nindent 8 }}
+        {{ include "clickhouse-keeper.podLabels" . | nindent 8 }}
+        {{ include "clickhouse-keeper.labels" . | nindent 8 }}
+      annotations:
+        {{- if .Values.pod.annotations -}}
+        {{-   toYaml .Values.pod.annotations | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "clickhouse-keeper.serviceAccountName" . }}
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: {{ .Values.pod.securityContext.fsGroup }}
+        fsGroupChangePolicy: {{ .Values.pod.securityContext.fsGroupChangePolicy }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.keeper_image.repository }}:{{ .Values.keeper_image.tag }}"
+          {{ include "wandb.containerSecurityContext" .Values.container.securityContext | nindent 10 }}
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: processed-config
+              mountPath: /etc/clickhouse-keeper
+            - name: config-volume
+              mountPath: /etc/clickhouse-keeper/keeper_config.xml
+              subPathExpr: "$(POD_NAME).xml"
+              readOnly: true
+            - name: keeper-data
+              mountPath: /var/lib/clickhouse
+              readOnly: false
+            - name: keeper-data
+              mountPath: /var/lib/clickhouse-keeper
+              readOnly: false
+            - name: keeper-data
+              mountPath: /var/log/clickhouse-keeper
+              readOnly: false
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 1000710000
+            runAsNonRoot: true
+            runAsUser: 1000710000
+            seLinuxOptions:
+              level: "s0:c27,c4"
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              ephemeral-storage: {{ .Values.resources.limits.ephemeralStorage }}
+              memory: {{ .Values.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              ephemeral-storage: {{ .Values.resources.requests.ephemeralStorage }}
+              memory: {{ .Values.resources.requests.memory }}
+          ports:
+            {{- include "clickhouse-keeper.containerPorts" . | nindent 10 }}
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+            tcpSocket:
+              port: http
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+            httpGet:
+              path: /ready
+              port: http
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "wandb.fullname" . }}-config
+        - name: processed-config
+          emptyDir: {}
+
+  volumeClaimTemplates:
+    - metadata:
+        name: keeper-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.resources.requests.storage }}
